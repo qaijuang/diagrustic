@@ -1,0 +1,4 @@
+bin.name = "diagrustic"
+
+[env]
+add = { FORCE_COLOR = "1" }

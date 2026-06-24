@@ -1,0 +1,13 @@
+[package]
+name = "diagrustic"
+edition = "2024"
+
+[[bin]]
+name = "diagrustic"
+required-features = ["std"]
+
+[features]
+std = []
+
+[dev-dependencies]
+trycmd = "1.2.0"
