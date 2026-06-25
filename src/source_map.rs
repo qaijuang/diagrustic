@@ -1,14 +1,14 @@
 use alloc::alloc::{Allocator, Global};
-use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use core::ops::Range;
 
+use crate::acow::{Acow, IntoAcow};
 use crate::span::{FileId, Span};
 
 #[derive(Debug)]
 pub struct SourceFile<'alloc, A: Allocator> {
-    pub name: Cow<'static, str>,
-    pub source: Cow<'static, str>,
+    pub name: Acow<'alloc, A>,
+    pub source: Acow<'alloc, A>,
     line_starts: Vec<usize, &'alloc A>,
 }
 
@@ -27,7 +27,7 @@ impl Default for SourceMap<'_> {
 impl SourceMap<'_> {
     #[must_use]
     pub fn new() -> Self {
-        Self { files: Vec::new_in(&Global), alloc: &Global }
+        Self::new_in(&Global)
     }
 }
 
@@ -38,9 +38,15 @@ impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
     }
 
     /// Add a source file, returning its `FileId`.
-    pub fn add_file(&mut self, name: Cow<'static, str>, source: Cow<'static, str>) -> FileId {
+    pub fn add_file(
+        &mut self,
+        name: impl IntoAcow<'alloc, A>,
+        source: impl IntoAcow<'alloc, A>,
+    ) -> FileId {
         let id = FileId::new(self.files.len());
-        let line_starts = self.line_starts(&source);
+        let name = name.into_acow(self.alloc);
+        let source = source.into_acow(self.alloc);
+        let line_starts = self.line_starts(source.as_str());
         self.files.push(SourceFile { name, source, line_starts });
         id
     }
@@ -62,13 +68,13 @@ impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
     /// Access the source text for a file.
     #[must_use]
     pub fn source(&self, file_id: FileId) -> Option<&str> {
-        self.files.get(file_id.index()).map(|f| &f.source[..])
+        self.files.get(file_id.index()).map(|f| f.source.as_str())
     }
 
     /// Access the file name.
     #[must_use]
     pub fn filename(&self, file_id: FileId) -> Option<&str> {
-        self.files.get(file_id.index()).map(|f| &f.name[..])
+        self.files.get(file_id.index()).map(|f| f.name.as_str())
     }
 
     /// Convert a byte offset to line and column (1‑based).
@@ -97,7 +103,7 @@ impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
             .line_starts
             .get(line_number)
             .map_or(file.source.len(), |next_start| next_start.saturating_sub(1));
-        Some(&file.source[start..end])
+        Some(&file.source.as_str()[start..end])
     }
 
     /// Return the start of the line containing `offset`.
@@ -129,7 +135,7 @@ mod tests {
     #[test]
     fn line_col_handles_multiline_offsets() {
         let mut source_map = SourceMap::new();
-        let file = source_map.add_file("foo.rs".into(), "alpha\nbeta\ngamma".into());
+        let file = source_map.add_file("foo.rs", "alpha\nbeta\ngamma");
 
         assert_eq!(source_map.line_col(file, 0), Some((1, 1)));
         assert_eq!(source_map.line_col(file, 5), Some((1, 6)));
@@ -143,7 +149,7 @@ mod tests {
     #[test]
     fn line_and_line_start_use_one_based_lines() {
         let mut source_map = SourceMap::new();
-        let file = source_map.add_file("foo.rs".into(), "alpha\nbeta\ngamma".into());
+        let file = source_map.add_file("foo.rs", "alpha\nbeta\ngamma");
 
         assert_eq!(source_map.line(file, 1), Some("alpha"));
         assert_eq!(source_map.line(file, 2), Some("beta"));

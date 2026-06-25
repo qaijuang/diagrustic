@@ -8,7 +8,7 @@ impl FileId {
         Self(id)
     }
     #[must_use]
-    pub fn index(&self) -> usize {
+    pub fn index(self) -> usize {
         self.0
     }
 }

@@ -1,7 +1,7 @@
 use alloc::alloc::Allocator;
-use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
+use crate::acow::Acow;
 use crate::applicability::Applicability;
 use crate::span::Span;
 
@@ -9,13 +9,13 @@ use crate::span::Span;
 pub enum Suggestion<'alloc, A: Allocator> {
     Replacement {
         span: Span,
-        message: Cow<'static, str>,
-        replacement: Cow<'static, str>,
+        message: Acow<'alloc, A>,
+        replacement: Acow<'alloc, A>,
         applicability: Applicability,
     },
     MultiPart {
-        parts: Vec<(Span, Cow<'static, str>), &'alloc A>,
-        message: Cow<'static, str>,
+        parts: Vec<(Span, Acow<'alloc, A>), &'alloc A>,
+        message: Acow<'alloc, A>,
         applicability: Applicability,
     },
 }

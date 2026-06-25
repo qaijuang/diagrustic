@@ -8,7 +8,7 @@ use diagrustic::{EmitDiagnostic, TerminalEmitter};
 
 fn main() -> Result<()> {
     let mut source_map = SourceMap::new();
-    let file_id = source_map.add_file("test.rs".into(), "let x: i32 = \"hello\";".into());
+    let file_id = source_map.add_file("test.rs", "let x: i32 = \"hello\";");
     let type_span = source_map.span(file_id, 7..10); // "i32"
     let expr_span = source_map.span(file_id, 13..20); // "\"hello\""
 
@@ -17,7 +17,7 @@ fn main() -> Result<()> {
         .set_code("E0308")
         .add_span(expr_span)
         .span_label(expr_span, "expected `i32`, found `&str`")
-        .span_label_with(type_span, || "due to this type annotation `i32`".to_string().into())
+        .span_label_with(type_span, || "due to this type annotation `i32`".to_string())
         .span_suggestion(
             type_span,
             "change the type to `&str`",

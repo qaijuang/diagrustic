@@ -1,9 +1,9 @@
 use alloc::alloc::{Allocator, Global};
-use alloc::borrow::Cow;
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::panic::Location;
 
+use crate::acow::{Acow, IntoAcow};
 use crate::applicability::Applicability;
 use crate::diagnostic::Diagnostic;
 use crate::level::DiagnosticLevel;
@@ -15,13 +15,13 @@ use crate::suggestion::Suggestion;
 struct LazyLabel<'alloc, A: Allocator> {
     span: Span,
     level: DiagnosticLevel,
-    f: Box<dyn FnOnce() -> Cow<'static, str>, &'alloc A>,
+    f: Box<dyn FnOnce(&'alloc A) -> Acow<'alloc, A>, &'alloc A>,
 }
 
 pub struct DiagnosticBuilder<'alloc, A: Allocator = Global> {
     level: DiagnosticLevel,
-    primary: Option<Cow<'static, str>>,
-    code: Option<Cow<'static, str>>,
+    primary: Option<Acow<'alloc, A>>,
+    code: Option<Acow<'alloc, A>>,
     spans: Vec<Span, &'alloc A>,
     suggestions: Vec<Suggestion<'alloc, A>, &'alloc A>,
     children: Vec<SubDiagnostic<'alloc, A>, &'alloc A>,
@@ -65,14 +65,14 @@ impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
     }
 
     #[must_use]
-    pub fn set_primary(mut self, msg: impl Into<Cow<'static, str>>) -> Self {
-        self.primary = Some(msg.into());
+    pub fn set_primary(mut self, msg: impl IntoAcow<'alloc, A>) -> Self {
+        self.primary = Some(msg.into_acow(self.alloc));
         self
     }
 
     #[must_use]
-    pub fn set_code(mut self, code: impl Into<Cow<'static, str>>) -> Self {
-        self.code = Some(code.into());
+    pub fn set_code(mut self, code: impl IntoAcow<'alloc, A>) -> Self {
+        self.code = Some(code.into_acow(self.alloc));
         self
     }
 
@@ -96,8 +96,8 @@ impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
 
     /// Attach a label to a span to create a Help `SubDiagnostic` eagerly.
     #[must_use]
-    pub fn span_label(mut self, span: Span, label: impl Into<Cow<'static, str>>) -> Self {
-        let mut sub = SubDiagnostic::new_in(DiagnosticLevel::Help, label.into(), self.alloc);
+    pub fn span_label(mut self, span: Span, label: impl IntoAcow<'alloc, A>) -> Self {
+        let mut sub = SubDiagnostic::new_in(DiagnosticLevel::Help, label, self.alloc);
         let mut spans = Vec::new_in(self.alloc);
         spans.push(span);
         sub.spans = spans;
@@ -108,15 +108,14 @@ impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
     /// Just like [`DiagnosticBuilder::span_label`], but the closure is lazily evaluated in [`DiagnosticBuilder::build()`].
     #[must_use]
     #[track_caller]
-    pub fn span_label_with(
-        mut self,
-        span: Span,
-        f: impl FnOnce() -> Cow<'static, str> + 'static,
-    ) -> Self {
+    pub fn span_label_with<M>(mut self, span: Span, f: impl FnOnce() -> M + 'static) -> Self
+    where
+        M: IntoAcow<'alloc, A>,
+    {
         self.lazy_labels.push(LazyLabel {
             span,
             level: DiagnosticLevel::Help,
-            f: Box::new_in(f, self.alloc),
+            f: Box::new_in(move |alloc| f().into_acow(alloc), self.alloc),
         });
         self
     }
@@ -125,14 +124,14 @@ impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
     pub fn span_suggestion(
         mut self,
         span: Span,
-        message: impl Into<Cow<'static, str>>,
-        replacement: impl Into<Cow<'static, str>>,
+        message: impl IntoAcow<'alloc, A>,
+        replacement: impl IntoAcow<'alloc, A>,
         applicability: Applicability,
     ) -> Self {
         self.suggestions.push(Suggestion::Replacement {
             span,
-            message: message.into(),
-            replacement: replacement.into(),
+            message: message.into_acow(self.alloc),
+            replacement: replacement.into_acow(self.alloc),
             applicability,
         });
         self
@@ -143,7 +142,7 @@ impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
     pub fn build(mut self) -> Diagnostic<'alloc, A> {
         // Evaluate lazy labels
         for ll in self.lazy_labels {
-            let message = (ll.f)();
+            let message = (ll.f)(self.alloc);
             let mut sub = SubDiagnostic::new_in(ll.level, message, self.alloc);
             let mut spans = Vec::new_in(self.alloc);
             spans.push(ll.span);
