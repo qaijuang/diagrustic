@@ -1,10 +1,10 @@
 #![cfg(feature = "std")]
 
-use std::env;
 use std::io::{self, IsTerminal};
 
 pub(crate) fn stderr_supports_color() -> bool {
-    if env::var_os("FORCE_COLOR") == Some("1".into()) {
+    #[cfg(debug_assertions)]
+    if option_env!("FORCE_COLOR") == Some("1") {
         return true;
     }
 
