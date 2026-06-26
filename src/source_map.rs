@@ -13,12 +13,12 @@ pub struct SourceFile<'alloc, A: Allocator> {
 }
 
 #[derive(Debug)]
-pub struct SourceMap<'alloc, A: Allocator = Global> {
+pub struct SourceMap<'alloc, A: Allocator> {
     files: Vec<SourceFile<'alloc, A>, &'alloc A>,
     alloc: &'alloc A,
 }
 
-impl Default for SourceMap<'_> {
+impl Default for SourceMap<'_, Global> {
     fn default() -> Self {
         Self::new_in(&Global)
     }
@@ -26,7 +26,7 @@ impl Default for SourceMap<'_> {
 
 impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
     #[must_use]
-    pub fn new_in(alloc: &'alloc A) -> Self {
+    pub const fn new_in(alloc: &'alloc A) -> Self {
         Self { files: Vec::new_in(alloc), alloc }
     }
 

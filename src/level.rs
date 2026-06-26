@@ -1,6 +1,3 @@
-#[cfg(feature = "std")]
-use crate::styles::{STYLE_ERROR, STYLE_HELP_NOTE, STYLE_WARNING};
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DiagnosticLevel {
@@ -25,6 +22,8 @@ impl DiagnosticLevel {
     #[cfg(feature = "std")]
     #[must_use]
     pub const fn as_style(&self) -> &'static str {
+        use crate::styles::{STYLE_ERROR, STYLE_HELP_NOTE, STYLE_WARNING};
+
         match self {
             DiagnosticLevel::Error | DiagnosticLevel::FailureNote => STYLE_ERROR,
             DiagnosticLevel::Warning => STYLE_WARNING,

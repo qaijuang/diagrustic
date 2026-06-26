@@ -13,7 +13,7 @@ pub(crate) fn stderr_supports_color() -> bool {
 }
 
 #[cfg(not(windows))]
-fn enable_ansi_stderr() -> bool {
+const fn enable_ansi_stderr() -> bool {
     true
 }
 

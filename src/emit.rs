@@ -5,7 +5,7 @@ use crate::source_map::SourceMap;
 
 pub trait EmitDiagnostic<A: Allocator, E> {
     #[allow(clippy::missing_errors_doc)]
-    fn emit(&mut self, diag: &Diagnostic<'_, A>, source_map: &SourceMap) -> Result<(), E>;
+    fn emit(&mut self, diag: &Diagnostic<'_, A>, source_map: &SourceMap<'_, A>) -> Result<(), E>;
 }
 
 #[cfg(feature = "std")]
@@ -122,19 +122,13 @@ pub mod terminal {
         range: Range<usize>,
     }
 
-    pub struct TerminalEmitter<'alloc, W: Write = io::Stderr, A: Allocator = Global> {
+    pub struct TerminalEmitter<'alloc, W: Write, A: Allocator> {
         renderer: HumanRenderer<'alloc, W, A>,
     }
 
-    impl Default for TerminalEmitter<'_> {
+    impl Default for TerminalEmitter<'_, io::Stderr, Global> {
         fn default() -> Self {
-            Self::new(io::stderr())
-        }
-    }
-
-    impl<W: Write> TerminalEmitter<'_, W> {
-        pub fn new(writer: W) -> Self {
-            Self::new_in(writer, &Global)
+            Self::new_in(io::stderr(), &Global)
         }
     }
 
@@ -143,28 +137,30 @@ pub mod terminal {
             let config = EmitterConfig::default();
             Self::with_config(writer, config.build(), alloc)
         }
-    }
 
-    impl<W: Write, A: Allocator> EmitDiagnostic<A, Error> for TerminalEmitter<'_, W, A> {
-        fn emit(&mut self, diag: &Diagnostic<'_, A>, source_map: &SourceMap) -> Result<(), Error> {
-            self.renderer.emit(diag, source_map)
-        }
-    }
-
-    impl<'alloc, W: Write, A: Allocator> TerminalEmitter<'alloc, W, A> {
         pub const fn with_config(writer: W, config: EmitterConfig, alloc: &'alloc A) -> Self {
             let renderer = HumanRenderer::new_in(writer, config, alloc);
             Self { renderer }
         }
     }
 
-    struct HumanRenderer<'alloc, W: Write = io::Stderr, A: Allocator = Global> {
+    impl<W: Write, A: Allocator> EmitDiagnostic<A, Error> for TerminalEmitter<'_, W, A> {
+        fn emit(
+            &mut self,
+            diag: &Diagnostic<'_, A>,
+            source_map: &SourceMap<'_, A>,
+        ) -> Result<(), Error> {
+            self.renderer.emit(diag, source_map)
+        }
+    }
+
+    struct HumanRenderer<'alloc, W: Write, A: Allocator> {
         writer: W,
         config: EmitterConfig,
         alloc: &'alloc A,
     }
 
-    impl Default for HumanRenderer<'_> {
+    impl Default for HumanRenderer<'_, io::Stderr, Global> {
         fn default() -> Self {
             let config = EmitterConfig::default();
             Self::new_in(io::stderr(), config.build(), &Global)
@@ -172,17 +168,21 @@ pub mod terminal {
     }
 
     impl<W: Write, A: Allocator> EmitDiagnostic<A, Error> for HumanRenderer<'_, W, A> {
-        fn emit(&mut self, diag: &Diagnostic<'_, A>, source_map: &SourceMap) -> Result<(), Error> {
+        fn emit(
+            &mut self,
+            diag: &Diagnostic<'_, A>,
+            source_map: &SourceMap<'_, A>,
+        ) -> Result<(), Error> {
             self.emit(diag, source_map)
         }
     }
 
-    impl<'alloc, W: Write, A: Allocator> HumanRenderer<'alloc, W, A> {
-        const fn new_in(writer: W, config: EmitterConfig, alloc: &'alloc A) -> Self {
-            Self { writer, config, alloc }
-        }
-
-        fn emit(&mut self, diag: &Diagnostic<'_, A>, source_map: &SourceMap) -> Result<(), Error> {
+    impl<W: Write, A: Allocator> HumanRenderer<'_, W, A> {
+        fn emit(
+            &mut self,
+            diag: &Diagnostic<'_, A>,
+            source_map: &SourceMap<'_, A>,
+        ) -> Result<(), Error> {
             if !matches!(self.config.format, DiagnosticFormat::Human) {
                 return Err(Error::new(
                     ErrorKind::Unsupported,
@@ -212,7 +212,7 @@ pub mod terminal {
 
         fn print_source_window(
             &mut self,
-            source_map: &SourceMap,
+            source_map: &SourceMap<'_, A>,
             primary_span: Span,
             labels: &[DisplayLabel<'_>],
             level: DiagnosticLevel,
@@ -241,39 +241,6 @@ pub mod terminal {
             self.print_label_markers(line_width, &positions, level)?;
             self.print_secondary_label_messages(line_width, &positions)?;
             self.write_gutter(line_width, "")
-        }
-
-        fn label_positions<'label>(
-            &self,
-            source_map: &SourceMap,
-            primary_span: Span,
-            primary_line: usize,
-            labels: &'label [DisplayLabel<'_>],
-        ) -> Vec<LabelPosition<'label>, &'alloc A> {
-            let labels = labels.iter().filter_map(|label| {
-                if label.span.file_id() != primary_span.file_id() {
-                    return None;
-                }
-                let (line, start_col) =
-                    source_map.line_col(label.span.file_id(), label.span.start())?;
-                if line != primary_line {
-                    return None;
-                }
-                let line_start = source_map.line_start(label.span.file_id(), label.span.start())?;
-                let width = label.span.end().saturating_sub(label.span.start()).max(1);
-                let end_col = start_col + width;
-                let line_end =
-                    line_start + source_map.line(label.span.file_id(), line).map_or(0, str::len);
-                if label.span.end() > line_end {
-                    return None;
-                }
-
-                Some(LabelPosition { label: *label, range: (start_col..end_col).into() })
-            });
-
-            let mut positions = Vec::new_in(self.alloc);
-            positions.extend(labels);
-            positions
         }
 
         fn print_label_markers(
@@ -340,35 +307,9 @@ pub mod terminal {
             Ok(())
         }
 
-        fn print_trailing_sub_diag(&mut self, sub: &SubDiagnostic<'_, A>) -> Result<(), Error> {
-            if sub.spans.is_empty() {
-                writeln!(self.writer, "  = {}: {}", sub.level.as_str(), sub.message)?;
-            }
-            for child in &sub.children {
-                self.print_trailing_sub_diag(child)?;
-            }
-            Ok(())
-        }
-
-        fn print_suggestion(
-            &mut self,
-            source_map: &SourceMap,
-            suggestion: &Suggestion<'_, A>,
-        ) -> Result<(), Error> {
-            match suggestion {
-                Suggestion::Replacement { span, message, replacement, .. } => {
-                    self.print_suggestion_replacement(source_map, *span, message, replacement)
-                }
-                Suggestion::MultiPart { message, .. } => {
-                    self.write_styled(StyleKind::Level(DiagnosticLevel::Help), "help")?;
-                    writeln!(self.writer, ": {message}")
-                }
-            }
-        }
-
         fn print_suggestion_replacement(
             &mut self,
-            source_map: &SourceMap,
+            source_map: &SourceMap<'_, A>,
             span: Span,
             message: &str,
             replacement: &str,
@@ -493,6 +434,71 @@ pub mod terminal {
                 write!(self.writer, "{RESET}")?;
             }
             Ok(())
+        }
+    }
+
+    impl<'alloc, W: Write, A: Allocator> HumanRenderer<'alloc, W, A> {
+        const fn new_in(writer: W, config: EmitterConfig, alloc: &'alloc A) -> Self {
+            Self { writer, config, alloc }
+        }
+
+        fn label_positions<'label>(
+            &self,
+            source_map: &SourceMap<'_, A>,
+            primary_span: Span,
+            primary_line: usize,
+            labels: &'label [DisplayLabel<'_>],
+        ) -> Vec<LabelPosition<'label>, &'alloc A> {
+            let labels = labels.iter().filter_map(|label| {
+                if label.span.file_id() != primary_span.file_id() {
+                    return None;
+                }
+                let (line, start_col) =
+                    source_map.line_col(label.span.file_id(), label.span.start())?;
+                if line != primary_line {
+                    return None;
+                }
+                let line_start = source_map.line_start(label.span.file_id(), label.span.start())?;
+                let width = label.span.end().saturating_sub(label.span.start()).max(1);
+                let end_col = start_col + width;
+                let line_end =
+                    line_start + source_map.line(label.span.file_id(), line).map_or(0, str::len);
+                if label.span.end() > line_end {
+                    return None;
+                }
+
+                Some(LabelPosition { label: *label, range: (start_col..end_col).into() })
+            });
+
+            let mut positions = Vec::new_in(self.alloc);
+            positions.extend(labels);
+            positions
+        }
+
+        fn print_trailing_sub_diag(&mut self, sub: &SubDiagnostic<'_, A>) -> Result<(), Error> {
+            if sub.spans.is_empty() {
+                writeln!(self.writer, "  = {}: {}", sub.level.as_str(), sub.message)?;
+            }
+            for child in &sub.children {
+                self.print_trailing_sub_diag(child)?;
+            }
+            Ok(())
+        }
+
+        fn print_suggestion(
+            &mut self,
+            source_map: &SourceMap<'_, A>,
+            suggestion: &Suggestion<'_, A>,
+        ) -> Result<(), Error> {
+            match suggestion {
+                Suggestion::Replacement { span, message, replacement, .. } => {
+                    self.print_suggestion_replacement(source_map, *span, message, replacement)
+                }
+                Suggestion::MultiPart { message, .. } => {
+                    self.write_styled(StyleKind::Level(DiagnosticLevel::Help), "help")?;
+                    writeln!(self.writer, ": {message}")
+                }
+            }
         }
 
         fn collect_labels<'diag>(

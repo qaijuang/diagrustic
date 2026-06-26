@@ -18,7 +18,7 @@ struct LazyLabel<'alloc, A: Allocator> {
     f: Box<dyn FnOnce(&'alloc A) -> Acow<'alloc, A>, &'alloc A>,
 }
 
-pub struct DiagnosticBuilder<'alloc, A: Allocator = Global> {
+pub struct DiagnosticBuilder<'alloc, A: Allocator> {
     level: DiagnosticLevel,
     primary: Option<Acow<'alloc, A>>,
     code: Option<Acow<'alloc, A>>,
@@ -30,27 +30,29 @@ pub struct DiagnosticBuilder<'alloc, A: Allocator = Global> {
     created_at: &'static Location<'static>,
 }
 
-impl DiagnosticBuilder<'_> {
+impl Default for DiagnosticBuilder<'_, Global> {
+    fn default() -> Self {
+        Self::new(DiagnosticLevel::Error)
+    }
+}
+
+impl DiagnosticBuilder<'_, Global> {
     #[must_use]
     #[track_caller]
-    pub fn new(level: DiagnosticLevel) -> Self {
-        Self {
-            level,
-            primary: None,
-            code: None,
-            spans: Vec::new_in(&Global),
-            suggestions: Vec::new_in(&Global),
-            children: Vec::new_in(&Global),
-            lazy_labels: Vec::new_in(&Global),
-            alloc: &Global,
-            created_at: Location::caller(),
-        }
+    pub const fn new(level: DiagnosticLevel) -> Self {
+        Self::new_in(level, &Global)
+    }
+
+    #[must_use]
+    pub fn add_span(mut self, span: Span) -> Self {
+        self.spans.push(span);
+        self
     }
 }
 
 impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
     #[track_caller]
-    pub fn new_in(level: DiagnosticLevel, alloc: &'alloc A) -> Self {
+    pub const fn new_in(level: DiagnosticLevel, alloc: &'alloc A) -> Self {
         Self {
             level,
             primary: None,
@@ -73,12 +75,6 @@ impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
     #[must_use]
     pub fn set_code(mut self, code: impl IntoAcow<'alloc, A>) -> Self {
         self.code = Some(code.into_acow(self.alloc));
-        self
-    }
-
-    #[must_use]
-    pub fn add_span(mut self, span: Span) -> Self {
-        self.spans.push(span);
         self
     }
 
