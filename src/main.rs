@@ -7,7 +7,7 @@ use diagrustic::source_map::SourceMap;
 use diagrustic::{EmitDiagnostic, TerminalEmitter};
 
 fn main() -> Result<()> {
-    let mut source_map = SourceMap::new();
+    let mut source_map = SourceMap::default();
     let file_id = source_map.add_file("test.rs", "let x: i32 = \"hello\";");
     let type_span = source_map.span(file_id, 7..10); // "i32"
     let expr_span = source_map.span(file_id, 13..20); // "\"hello\""

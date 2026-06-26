@@ -20,13 +20,6 @@ pub struct SourceMap<'alloc, A: Allocator = Global> {
 
 impl Default for SourceMap<'_> {
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl SourceMap<'_> {
-    #[must_use]
-    pub fn new() -> Self {
         Self::new_in(&Global)
     }
 }
@@ -134,7 +127,7 @@ mod tests {
 
     #[test]
     fn line_col_handles_multiline_offsets() {
-        let mut source_map = SourceMap::new();
+        let mut source_map = SourceMap::default();
         let file = source_map.add_file("foo.rs", "alpha\nbeta\ngamma");
 
         assert_eq!(source_map.line_col(file, 0), Some((1, 1)));
@@ -148,7 +141,7 @@ mod tests {
 
     #[test]
     fn line_and_line_start_use_one_based_lines() {
-        let mut source_map = SourceMap::new();
+        let mut source_map = SourceMap::default();
         let file = source_map.add_file("foo.rs", "alpha\nbeta\ngamma");
 
         assert_eq!(source_map.line(file, 1), Some("alpha"));
