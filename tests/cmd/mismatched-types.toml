@@ -1,4 +1,17 @@
 bin.name = "diagrustic"
+stdout = ""
+stderr = """
+\u001B[1m\u001B[91merror[E0308]\u001B[0m\u001B[1m: mismatched types\u001B[0m
+ \u001B[1m\u001B[94m--> \u001B[0mtest.rs:1:14
+  \u001B[1m\u001B[94m|\u001B[0m
+\u001B[1m\u001B[94m1\u001B[0m \u001B[1m\u001B[94m|\u001B[0m let x: i32 = "hello";
+  \u001B[1m\u001B[94m|\u001B[0m        \u001B[1m\u001B[94m---\u001B[0m   \u001B[1m\u001B[91m^^^^^^^\u001B[0m \u001B[1m\u001B[91mexpected `i32`, found `&str`\u001B[0m
+  \u001B[1m\u001B[94m|\u001B[0m        \u001B[1m\u001B[94m|\u001B[0m
+  \u001B[1m\u001B[94m|\u001B[0m        \u001B[1m\u001B[94mdue to this type annotation `i32`\u001B[0m
+  \u001B[1m\u001B[94m|\u001B[0m
+\u001B[1m\u001B[92mhelp\u001B[0m: change the type to `&str`
+  \u001B[1m\u001B[94m|\u001B[0m
+\u001B[1m\u001B[94m1\u001B[0m \u001B[1m\u001B[94m|\u001B[0m let x: &str = "hello";
+  \u001B[1m\u001B[94m|\u001B[0m        \u001B[92m++++\u001B[0m
 
-[env]
-add = { FORCE_COLOR = "1" }
+"""
