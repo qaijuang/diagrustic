@@ -50,12 +50,6 @@ impl DiagnosticBuilder<'_, Global> {
     pub const fn new(level: DiagnosticLevel) -> Self {
         Self::new_in(level, &Global)
     }
-
-    #[must_use]
-    pub fn add_span(mut self, span: Span) -> Self {
-        self.spans.push(span);
-        self
-    }
 }
 
 impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
@@ -83,6 +77,12 @@ impl<'alloc, A: Allocator> DiagnosticBuilder<'alloc, A> {
     #[must_use]
     pub fn set_code(mut self, code: impl IntoAcow<'alloc, A>) -> Self {
         self.code = Some(code.into_acow(self.alloc));
+        self
+    }
+
+    #[must_use]
+    pub fn add_span(mut self, span: Span) -> Self {
+        self.spans.push(span);
         self
     }
 
