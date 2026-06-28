@@ -1,6 +1,7 @@
 use alloc::alloc::{Allocator, Global};
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+use core::fmt;
 use core::panic::Location;
 
 use crate::acow::{Acow, IntoAcow};
@@ -18,6 +19,13 @@ struct LazyLabel<'alloc, A: Allocator> {
     f: Box<dyn FnOnce(&'alloc A) -> Acow<'alloc, A>, &'alloc A>,
 }
 
+impl<A: Allocator> fmt::Debug for LazyLabel<'_, A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LazyLabel").field("span", &self.span).field("level", &self.level).finish()
+    }
+}
+
+#[derive(Debug)]
 pub struct DiagnosticBuilder<'alloc, A: Allocator> {
     level: DiagnosticLevel,
     primary: Option<Acow<'alloc, A>>,
