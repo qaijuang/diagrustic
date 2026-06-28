@@ -134,11 +134,10 @@ pub mod terminal {
 
     impl<'alloc, W: Write, A: Allocator> TerminalEmitter<'alloc, W, A> {
         pub fn new_in(writer: W, alloc: &'alloc A) -> Self {
-            let config = EmitterConfig::default();
-            Self::with_config(writer, config.build(), alloc)
+            Self::with_config(writer, EmitterConfig::default(), alloc)
         }
 
-        pub const fn with_config(writer: W, config: EmitterConfig, alloc: &'alloc A) -> Self {
+        pub fn with_config(writer: W, config: EmitterConfig, alloc: &'alloc A) -> Self {
             let renderer = HumanRenderer::new_in(writer, config, alloc);
             Self { renderer }
         }
@@ -162,8 +161,7 @@ pub mod terminal {
 
     impl Default for HumanRenderer<'_, io::Stderr, Global> {
         fn default() -> Self {
-            let config = EmitterConfig::default();
-            Self::new_in(io::stderr(), config.build(), &Global)
+            Self::new_in(io::stderr(), EmitterConfig::default(), &Global)
         }
     }
 
@@ -438,7 +436,8 @@ pub mod terminal {
     }
 
     impl<'alloc, W: Write, A: Allocator> HumanRenderer<'alloc, W, A> {
-        const fn new_in(writer: W, config: EmitterConfig, alloc: &'alloc A) -> Self {
+        fn new_in(writer: W, config: EmitterConfig, alloc: &'alloc A) -> Self {
+            let config = config.build();
             Self { writer, config, alloc }
         }
 
