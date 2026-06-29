@@ -55,7 +55,7 @@ impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
             source.is_char_boundary(range.start) && source.is_char_boundary(range.end),
             "range must be at character boundaries"
         );
-        Span::new(file_id, range.into())
+        Span::new(file_id, range)
     }
 
     /// Access the source text for a file.

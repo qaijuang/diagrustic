@@ -24,8 +24,8 @@ pub struct Span {
 impl Span {
     /// Only the `SourceMap` may create spans.
     #[must_use]
-    pub const fn new(file_id: FileId, range: Range<usize>) -> Self {
-        Self { file_id, range }
+    pub fn new(file_id: FileId, range: core::ops::Range<usize>) -> Self {
+        Self { file_id, range: range.into() }
     }
 
     #[must_use]
