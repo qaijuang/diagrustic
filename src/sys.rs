@@ -3,11 +3,6 @@
 use std::io::{self, IsTerminal};
 
 pub(crate) fn stderr_supports_color() -> bool {
-    #[cfg(debug_assertions)]
-    if option_env!("FORCE_COLOR") == Some("1") {
-        return true;
-    }
-
     let stderr = io::stderr();
     stderr.is_terminal() && enable_ansi_stderr()
 }

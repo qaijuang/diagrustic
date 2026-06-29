@@ -1,0 +1,19 @@
+bin.name = "diagrustic"
+args = ["same-line-labels"]
+stdout = ""
+stderr = """
+error: cannot add these operands
+ --> same-line.rs:1:18
+  |
+1 | let total = left + right;
+  |             ---- ^ ----- right operand
+  |             |
+  |             left operand
+  |                  |
+  |                  operator requires matching types
+  |
+
+"""
+
+[env]
+add = { DIAGRUSTIC_COLOR = "never" }

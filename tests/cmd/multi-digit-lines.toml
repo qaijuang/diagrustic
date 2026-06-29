@@ -1,0 +1,12 @@
+bin.name = "diagrustic"
+args = ["multi-digit-lines"]
+stdout = ""
+stderr = """
+warning: multi-digit line number
+ --> lines.rs:12:9
+   |
+12 | line 12 target
+   |         ^^^^^^ aligned marker
+   |
+
+"""

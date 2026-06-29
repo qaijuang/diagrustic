@@ -1,0 +1,24 @@
+bin.name = "diagrustic"
+args = ["filtered-labels"]
+stdout = ""
+stderr = """
+error: labels on related lines are rendered
+ --> main.rs:1:1
+  |
+1 | first();
+  | ^^^^^ primary line
+  |
+note: second line label
+ --> main.rs:2:1
+  |
+2 | second();
+  | ------
+  |
+note: other file label
+ --> other.rs:1:1
+  |
+1 | external();
+  | --------
+  |
+
+"""

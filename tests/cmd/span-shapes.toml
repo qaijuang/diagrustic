@@ -1,0 +1,12 @@
+bin.name = "diagrustic"
+args = ["span-shapes"]
+stdout = ""
+stderr = """
+error: overlapping and zero-width primary spans
+ --> shapes.rs:1:2
+  |
+1 | abcdefghi
+  |  ^^^^^ ^
+  |
+
+"""

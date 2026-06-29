@@ -1,0 +1,6 @@
+bin.name = "diagrustic"
+args = ["unsupported-short-format"]
+stdout = ""
+stderr = """
+error: diagnostic format `short` is not implemented
+"""

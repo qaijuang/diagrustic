@@ -1,0 +1,15 @@
+bin.name = "diagrustic"
+args = ["combining-width"]
+stdout = ""
+stderr = """
+error: combining mark before span
+ --> combining.rs:1:11
+  |
+1 | let café_value = 1;
+  |          ^^^^^ value starts after combining mark
+  |
+
+"""
+
+[env]
+add = { DIAGRUSTIC_COLOR = "never" }

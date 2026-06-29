@@ -1,0 +1,7 @@
+bin.name = "diagrustic"
+args = ["failure-note"]
+stdout = ""
+stderr = """
+error: aborting due to 2 previous errors
+
+"""

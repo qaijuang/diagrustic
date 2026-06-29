@@ -74,14 +74,16 @@ impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
     #[must_use]
     pub fn line_col(&self, file_id: FileId, offset: usize) -> Option<(usize, usize)> {
         let file = self.files.get(file_id.index())?;
-        if offset > file.source.len() {
+        if offset > file.source.len() || !file.source.as_str().is_char_boundary(offset) {
             return None;
         }
         let line_idx = match file.line_starts.binary_search(&offset) {
             Ok(idx) => idx,
             Err(idx) => idx.saturating_sub(1),
         };
-        Some((line_idx + 1, offset - file.line_starts[line_idx] + 1))
+        let line_start = file.line_starts[line_idx];
+        let column = file.source.as_str()[line_start..offset].chars().count() + 1;
+        Some((line_idx + 1, column))
     }
 
     /// Get a line of source by line number (1‑based).
@@ -113,6 +115,15 @@ impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
         Some(file.line_starts[line_idx])
     }
 
+    #[must_use]
+    pub(crate) fn line_start_for_line(&self, file_id: FileId, line_number: usize) -> Option<usize> {
+        if line_number == 0 {
+            return None;
+        }
+        let file = self.files.get(file_id.index())?;
+        file.line_starts.get(line_number - 1).copied()
+    }
+
     fn line_starts(&self, source: &str) -> Vec<usize, &'alloc A> {
         let mut starts = Vec::new_in(self.alloc);
         starts.push(0);
@@ -140,6 +151,16 @@ mod tests {
     }
 
     #[test]
+    fn line_col_counts_characters_not_bytes() {
+        let source = "let\tπ = \"中\";";
+        let mut source_map = SourceMap::default();
+        let file = source_map.add_file("unicode.rs", source);
+
+        assert_eq!(source_map.line_col(file, source.find('π').unwrap()), Some((1, 5)));
+        assert_eq!(source_map.line_col(file, source.find('中').unwrap()), Some((1, 10)));
+    }
+
+    #[test]
     fn line_and_line_start_use_one_based_lines() {
         let mut source_map = SourceMap::default();
         let file = source_map.add_file("foo.rs", "alpha\nbeta\ngamma");
@@ -151,5 +172,9 @@ mod tests {
         assert_eq!(source_map.line_start(file, 0), Some(0));
         assert_eq!(source_map.line_start(file, 6), Some(6));
         assert_eq!(source_map.line_start(file, 16), Some(11));
+        assert_eq!(source_map.line_start_for_line(file, 1), Some(0));
+        assert_eq!(source_map.line_start_for_line(file, 2), Some(6));
+        assert_eq!(source_map.line_start_for_line(file, 3), Some(11));
+        assert_eq!(source_map.line_start_for_line(file, 4), None);
     }
 }

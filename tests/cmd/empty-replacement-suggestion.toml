@@ -1,0 +1,17 @@
+bin.name = "diagrustic"
+args = ["empty-replacement-suggestion"]
+stdout = ""
+stderr = """
+error: remove unused binding
+ --> remove.rs:1:13
+  |
+1 | let value = unused;
+  |             ^^^^^^ remove this
+  |
+help: remove the unused binding
+  |
+1 - let value = unused;
+1 + let value = ;
+  |
+
+"""

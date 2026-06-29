@@ -1,0 +1,9 @@
+bin.name = "diagrustic"
+args = ["trailing-subdiagnostics"]
+stdout = ""
+stderr = """
+error: trailing subdiagnostics
+  = note: while checking item
+  = help: try simplifying the expression
+
+"""

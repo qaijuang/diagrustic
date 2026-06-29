@@ -1,0 +1,12 @@
+bin.name = "diagrustic"
+args = ["primary-without-label"]
+stdout = ""
+stderr = """
+error: primary span without a label
+ --> primary.rs:1:5
+  |
+1 | let value = input;
+  |     ^^^^^
+  |
+
+"""

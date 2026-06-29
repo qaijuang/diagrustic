@@ -1,0 +1,33 @@
+bin.name = "diagrustic"
+args = ["levels"]
+stdout = ""
+stderr = """
+error: error level
+ --> levels.rs:1:5
+  |
+1 | let signal = 1;
+  |     ^^^^^^ level marker
+  |
+
+warning: warning level
+ --> levels.rs:1:5
+  |
+1 | let signal = 1;
+  |     ^^^^^^ level marker
+  |
+
+help: help level
+ --> levels.rs:1:5
+  |
+1 | let signal = 1;
+  |     ^^^^^^ level marker
+  |
+
+note: note level
+ --> levels.rs:1:5
+  |
+1 | let signal = 1;
+  |     ^^^^^^ level marker
+  |
+
+"""

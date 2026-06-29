@@ -1,0 +1,26 @@
+bin.name = "diagrustic"
+args = ["adjacent-multiline-spans"]
+stdout = ""
+stderr = """
+error: adjacent multi-line spans
+ --> adjacent-multiline.rs:1:13
+  |
+1 | let first = call(
+  |  ___________-
+2 | |    a,
+3 | |);
+  | |^ first call
+  |
+ --> adjacent-multiline.rs:4:14
+  |
+4 | let second = call(
+  |  ____________-
+5 | |    b,
+6 | |);
+  | |- second call
+  |
+
+"""
+
+[env]
+add = { DIAGRUSTIC_COLOR = "never" }

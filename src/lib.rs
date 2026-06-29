@@ -9,7 +9,7 @@ mod emit;
 mod span;
 #[cfg(feature = "std")]
 mod styles;
-mod sub_diag;
+pub mod sub_diag;
 #[cfg(feature = "std")]
 mod sys;
 

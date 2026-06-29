@@ -1,0 +1,20 @@
+bin.name = "diagrustic"
+args = ["multiline-secondary-span"]
+stdout = ""
+stderr = """
+error: expected `i32`, found call result
+ --> multiline-secondary.rs:2:5
+  |
+1 | fn build() -> i32 {
+  |               --- expected because of this return type
+2 |     compute(
+  |  ___-
+3 | |        input,
+4 | |    )
+  | |____^ expected `i32`, found call result
+  |
+
+"""
+
+[env]
+add = { DIAGRUSTIC_COLOR = "never" }

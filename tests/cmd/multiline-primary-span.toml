@@ -1,0 +1,19 @@
+bin.name = "diagrustic"
+args = ["multiline-primary-span"]
+stdout = ""
+stderr = """
+error: match arms have incompatible types
+ --> multiline-primary.rs:1:13
+  |
+1 | let value = match input {
+  |  ___________-
+2 | |    Some(x) => x,
+3 | |    None => return,
+4 | |};
+  | |^ this match expression has mixed arm types
+  |
+
+"""
+
+[env]
+add = { DIAGRUSTIC_COLOR = "never" }

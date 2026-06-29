@@ -1,0 +1,12 @@
+bin.name = "diagrustic"
+args = ["label-only"]
+stdout = ""
+stderr = """
+error: label without a primary span
+ --> label-only.rs:1:8
+  |
+1 | item = value;
+  |        ^^^^^ label supplies the source window
+  |
+
+"""

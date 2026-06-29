@@ -1,0 +1,12 @@
+bin.name = "diagrustic"
+args = ["emoji-width"]
+stdout = ""
+stderr = """
+error: identifiers cannot contain emoji: `family_👨👩👧👦_value`
+ --> emoji.rs:2:9
+  |
+2 |     let family_👨👩👧👦_value = 1;
+  |         ^^^^^^^^^^^^^^^^^^^^^
+  |
+
+"""

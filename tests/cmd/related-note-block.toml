@@ -1,0 +1,21 @@
+bin.name = "diagrustic"
+args = ["related-note-block"]
+stdout = ""
+stderr = """
+error: this function takes 1 argument but 2 arguments were supplied
+ --> related-note.rs:2:13
+  |
+2 | fn main() { call(a, b); }
+  |             ^^^^    - unexpected argument
+  |
+note: function defined here
+ --> related-note.rs:1:4
+  |
+1 | fn call(a: i32) {}
+  |    ----
+  |
+
+"""
+
+[env]
+add = { DIAGRUSTIC_COLOR = "never" }

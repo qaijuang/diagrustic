@@ -1,0 +1,14 @@
+bin.name = "diagrustic"
+args = ["unicode-tabs"]
+stdout = ""
+stderr = """
+error: unicode and tabbed source
+ --> unicode.rs:1:10
+  |
+1 | let    π = "中";
+  |        -    ^^ unicode string
+  |        |
+  |        tabbed unicode identifier
+  |
+
+"""

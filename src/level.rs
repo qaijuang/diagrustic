@@ -22,12 +22,13 @@ impl DiagnosticLevel {
     #[cfg(feature = "std")]
     #[must_use]
     pub const fn as_style(&self) -> &'static str {
-        use crate::styles::{STYLE_ERROR, STYLE_HELP_NOTE, STYLE_WARNING};
+        use crate::styles::{STYLE_ERROR, STYLE_HELP, STYLE_NOTE, STYLE_WARNING};
 
         match self {
             DiagnosticLevel::Error | DiagnosticLevel::FailureNote => STYLE_ERROR,
             DiagnosticLevel::Warning => STYLE_WARNING,
-            DiagnosticLevel::Help | DiagnosticLevel::Note => STYLE_HELP_NOTE,
+            DiagnosticLevel::Help => STYLE_HELP,
+            DiagnosticLevel::Note => STYLE_NOTE,
         }
     }
 }

@@ -1,0 +1,21 @@
+bin.name = "diagrustic"
+args = ["multiple-secondary-same-line"]
+stdout = ""
+stderr = """
+error: too many arguments
+ --> many-secondary.rs:1:1
+  |
+1 | call(first, second, third);
+  | ^^^^ -----  ------  ----- third argument
+  | |
+  | called here
+  |      |
+  |      first argument
+  |             |
+  |             second argument
+  |
+
+"""
+
+[env]
+add = { DIAGRUSTIC_COLOR = "never" }

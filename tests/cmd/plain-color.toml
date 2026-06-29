@@ -1,0 +1,12 @@
+bin.name = "diagrustic"
+args = ["plain-color"]
+stdout = ""
+stderr = """
+error: plain output
+ --> plain.rs:1:14
+  |
+1 | let number = "text";
+  |              ^^^^^^ no ANSI styling
+  |
+
+"""

@@ -1,0 +1,21 @@
+bin.name = "diagrustic"
+args = ["far-apart-labels"]
+stdout = ""
+stderr = """
+error: labels are far apart
+ --> far.rs:1:1
+  |
+1 | first();
+  | ^^^^^ first label
+  |
+note: last label
+ --> far.rs:5:1
+  |
+5 | last();
+  | ----
+  |
+
+"""
+
+[env]
+add = { DIAGRUSTIC_COLOR = "never" }
