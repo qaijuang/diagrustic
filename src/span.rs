@@ -4,7 +4,8 @@ use core::range::Range;
 pub struct FileId(usize);
 
 impl FileId {
-    pub(crate) const fn new(id: usize) -> Self {
+    #[must_use]
+    pub const fn new(id: usize) -> Self {
         Self(id)
     }
     #[must_use]
@@ -22,7 +23,8 @@ pub struct Span {
 
 impl Span {
     /// Only the `SourceMap` may create spans.
-    pub(crate) const fn new(file_id: FileId, range: Range<usize>) -> Self {
+    #[must_use]
+    pub const fn new(file_id: FileId, range: Range<usize>) -> Self {
         Self { file_id, range }
     }
 

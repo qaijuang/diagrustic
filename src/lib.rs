@@ -6,10 +6,8 @@ extern crate alloc;
 
 mod acow;
 mod emit;
-mod span;
 #[cfg(feature = "std")]
 mod styles;
-pub mod sub_diag;
 #[cfg(feature = "std")]
 mod sys;
 
@@ -18,6 +16,8 @@ pub mod builder;
 pub mod diagnostic;
 pub mod level;
 pub mod source_map;
+pub mod span;
+pub mod sub_diag;
 pub mod suggestion;
 
 pub use acow::{Acow, IntoAcow};
