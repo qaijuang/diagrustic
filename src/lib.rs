@@ -13,7 +13,9 @@ mod sys;
 
 pub mod applicability;
 pub mod builder;
+pub mod context;
 pub mod diagnostic;
+pub mod diagnostics;
 pub mod level;
 pub mod source_map;
 pub mod span;

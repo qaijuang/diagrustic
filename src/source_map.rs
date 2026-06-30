@@ -1,9 +1,52 @@
 use alloc::alloc::{Allocator, Global};
 use alloc::vec::Vec;
-use core::ops::Range;
 
 use crate::acow::{Acow, IntoAcow};
-use crate::span::{FileId, Span};
+use crate::span::{ByteSpan, FileId, Span};
+
+pub struct Source<'map, 'alloc, A: Allocator> {
+    source_map: &'map SourceMap<'alloc, A>,
+    file_id: FileId,
+}
+
+impl<A: Allocator> Copy for Source<'_, '_, A> {}
+impl<A: Allocator> Clone for Source<'_, '_, A> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'map, 'alloc, A: Allocator> Source<'map, 'alloc, A> {
+    const fn new(source_map: &'map SourceMap<'alloc, A>, file_id: FileId) -> Self {
+        Self { source_map, file_id }
+    }
+
+    #[must_use]
+    pub fn span(&self, span: impl Into<ByteSpan>) -> Span {
+        self.source_map.span(self.file_id, span.into())
+    }
+
+    /// # Panics
+    ///
+    /// Panics only if this handle no longer refers to a file inside its source map.
+    #[must_use]
+    pub fn text(&self) -> &str {
+        self.source_map.source(self.file_id).expect("source handle should reference a file")
+    }
+
+    /// # Panics
+    ///
+    /// Panics only if this handle no longer refers to a file inside its source map.
+    #[must_use]
+    pub fn filename(&self) -> &str {
+        self.source_map.filename(self.file_id).expect("source handle should reference a file")
+    }
+
+    #[must_use]
+    pub const fn source_map(&self) -> &'map SourceMap<'alloc, A> {
+        self.source_map
+    }
+}
 
 #[derive(Debug)]
 pub struct SourceFile<'alloc, A: Allocator> {
@@ -44,15 +87,32 @@ impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
         id
     }
 
+    #[must_use]
+    pub fn add_source(
+        &mut self,
+        name: impl IntoAcow<'alloc, A>,
+        source: impl IntoAcow<'alloc, A>,
+    ) -> Source<'_, 'alloc, A> {
+        let file_id = self.add_file(name, source);
+        Source::new(self, file_id)
+    }
+
+    #[must_use]
+    pub fn source_handle(&self, file_id: FileId) -> Option<Source<'_, 'alloc, A>> {
+        self.files.get(file_id.index())?;
+        Some(Source::new(self, file_id))
+    }
+
     /// Create a Span for a given file and byte range.
     /// Panics in debug if range is out of bounds.
     #[must_use]
-    pub fn span(&self, file_id: FileId, range: Range<usize>) -> Span {
+    pub fn span(&self, file_id: FileId, range: impl Into<ByteSpan>) -> Span {
+        let range = range.into();
         debug_assert!(file_id.index() < self.files.len(), "file_id out of bounds");
         let source = &self.files[file_id.index()].source;
-        debug_assert!(range.end <= source.len(), "range out of bounds");
+        debug_assert!(range.end() <= source.len(), "range out of bounds");
         debug_assert!(
-            source.is_char_boundary(range.start) && source.is_char_boundary(range.end),
+            source.is_char_boundary(range.start()) && source.is_char_boundary(range.end()),
             "range must be at character boundaries"
         );
         Span::new(file_id, range)
@@ -135,6 +195,21 @@ impl<'alloc, A: Allocator> SourceMap<'alloc, A> {
 #[cfg(test)]
 mod tests {
     use super::SourceMap;
+
+    #[test]
+    fn add_source_returns_file_scoped_span_handle() {
+        let mut source_map = SourceMap::default();
+        let source = source_map.add_source("input.rs", "let value = 1;");
+
+        let span = source.span(4..9);
+
+        assert_eq!(source.filename(), "input.rs");
+        assert_eq!(source.text(), "let value = 1;");
+        assert_eq!(span.start(), 4);
+        assert_eq!(span.end(), 9);
+        assert_eq!(span.range(), 4..9);
+        assert_eq!(source_map.filename(span.file_id()), Some("input.rs"));
+    }
 
     #[test]
     fn line_col_handles_multiline_offsets() {
